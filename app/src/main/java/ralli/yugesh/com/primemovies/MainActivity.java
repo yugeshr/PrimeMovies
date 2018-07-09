@@ -1,9 +1,12 @@
 package ralli.yugesh.com.primemovies;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
@@ -14,16 +17,17 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
+import org.json.JSONException;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity
-        implements MovieAdapter.ListItemClickListener {
+public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler {
 
     private ImageView imageView;
-    private String imageLink;
-    private static final int MOVIE_LIST_ITEMS = 20;
+    private int sortBy = 1;
+    private MovieAdapter movieAdapter;
     private Toast mToast;
 
     @Override
@@ -31,70 +35,58 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //imageView = (ImageView) findViewById(R.id.iv_thumbnail_data);
-        RecyclerView mMoviesList = (RecyclerView) findViewById(R.id.rv_posters);
+        RecyclerView mMoviesList = findViewById(R.id.rv_posters);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),2);
         mMoviesList.setLayoutManager(layoutManager);
 
         mMoviesList.setHasFixedSize(true);
 
-        MovieAdapter movieAdapter = new MovieAdapter(MOVIE_LIST_ITEMS, this);
+        movieAdapter = new MovieAdapter(this);
         mMoviesList.setAdapter(movieAdapter);
 
-        //URL imageLoadUrl = NetworkUtils.buildUrl();
-
-        //imageLink = imageLoadUrl.toString();
-
-        //Picasso.get().load(imageLink).into(imageView);
-
-        //movieAdapter = new MovieAdapter(getApplicationContext(),Arrays.asList(movieData));
-
-        //GridView gridView = (GridView) findViewById(R.id.gv_movies);
-        //gridView.setAdapter(movieAdapter);
-        
         loadMovieData();
 
     }
 
     private void loadMovieData() {
 
-        URL movieDataUrl = NetworkUtils.buildUrl();
+        URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
         new FetchMovieDataTask().execute(movieDataUrl);
 
     }
 
     @Override
-    public void onListItemClick(int clickedItemIndex) {
-        if (mToast != null) {
-            mToast.cancel();
-        }
-
-        String toastMessage = "Item #" + clickedItemIndex + " clicked.";
-        mToast = Toast.makeText(this, toastMessage, Toast.LENGTH_LONG);
-        mToast.show();
-
+    public void onClick(String selectedMovie) {
+        Intent intent = new Intent(getApplicationContext(),DetailsActivity.class);
+        intent.putExtra(Intent.EXTRA_TEXT,selectedMovie);
+        startActivity(intent);
     }
 
-    public class FetchMovieDataTask extends AsyncTask<URL, Void, String>{
+    public class FetchMovieDataTask extends AsyncTask<URL, Void, String[]>{
 
         @Override
-        protected String doInBackground(URL... urls) {
+        protected String[] doInBackground(URL... urls) {
             URL fetchUrl = urls[0];
-            String fetchResults = null;
+            String fetchResponse;
             try{
-                fetchResults = NetworkUtils.getResponseFromHttpUrl(fetchUrl);
-            } catch (IOException e) {
+                fetchResponse = NetworkUtils.getResponseFromHttpUrl(fetchUrl);
+                String[] simpleJsonData = MovieDatabaseJson.getStringsFromJson(MainActivity.this,fetchResponse);
+                return simpleJsonData;
+            } catch (Exception e) {
                 e.printStackTrace();
+                return null;
             }
-
-            return fetchResults;
         }
 
         @Override
-        protected void onPostExecute(String fetchResults) {
+        protected void onPostExecute(String[] fetchResults) {
             if (fetchResults != null && !fetchResults.equals("")) {
-
+                    //System.out.println(movieString);
+                    movieAdapter.setPosterPath(fetchResults);
+            }
+            else {
+                System.out.println("null value");
             }
             super.onPostExecute(fetchResults);
         }
@@ -112,10 +104,14 @@ public class MainActivity extends AppCompatActivity
 
         switch (id){
             case R.id.action_sort_tr:
-                Toast.makeText(getApplicationContext(),"Sorted by Top Rated",Toast.LENGTH_SHORT).show();
+                sortBy = 0;
+                loadMovieData();
+                Toast.makeText(getApplicationContext(),"Sorted by Top Rated",Toast.LENGTH_LONG).show();
                 break;
             case R.id.action_sort_mp:
-                Toast.makeText(getApplicationContext(),"Sorted by Most Popular",Toast.LENGTH_SHORT).show();
+                sortBy = 1;
+                loadMovieData();
+                Toast.makeText(getApplicationContext(),"Sorted by Most Popular",Toast.LENGTH_LONG).show();
                 break;
         }
 
