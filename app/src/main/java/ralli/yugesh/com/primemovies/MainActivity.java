@@ -1,34 +1,22 @@
 package ralli.yugesh.com.primemovies;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.GridView;
-import android.widget.ImageView;
 import android.widget.Toast;
-
-import com.squareup.picasso.Picasso;
-
-import org.json.JSONException;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler {
 
-    private ImageView imageView;
     private int sortBy = 1;
     private MovieAdapter movieAdapter;
-    private Toast mToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +32,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         movieAdapter = new MovieAdapter(this);
         mMoviesList.setAdapter(movieAdapter);
+
+        isOnline();
 
         loadMovieData();
 
@@ -63,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         startActivity(intent);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public class FetchMovieDataTask extends AsyncTask<URL, Void, String[]>{
 
         @Override
@@ -71,8 +62,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             String fetchResponse;
             try{
                 fetchResponse = NetworkUtils.getResponseFromHttpUrl(fetchUrl);
-                String[] simpleJsonData = MovieDatabaseJson.getStringsFromJson(MainActivity.this,fetchResponse);
-                return simpleJsonData;
+                return MovieDatabaseJson.getStringsFromJson(MainActivity.this,fetchResponse);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -81,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         @Override
         protected void onPostExecute(String[] fetchResults) {
+            //noinspection EqualsBetweenInconvertibleTypes
             if (fetchResults != null && !fetchResults.equals("")) {
                     //System.out.println(movieString);
                     movieAdapter.setPosterPath(fetchResults);
@@ -116,5 +107,15 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void isOnline() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+        }
+        catch (IOException | InterruptedException e)          { e.printStackTrace(); }
+
     }
 }
