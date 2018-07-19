@@ -1,7 +1,11 @@
 package ralli.yugesh.com.primemovies;
 
+import android.annotation.SuppressLint;
+import android.support.v4.content.AsyncTaskLoader;
 import android.content.Intent;
-import android.os.AsyncTask;
+import android.support.annotation.NonNull;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -10,13 +14,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import org.json.JSONException;
+
 import java.io.IOException;
 import java.net.URL;
 
-public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler {
+public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler,
+        LoaderManager.LoaderCallbacks<String> {
 
     private int sortBy = 1;
     private MovieAdapter movieAdapter;
+    private static final int MOVIES_LOADER = 22;
+    private static final String FETCH_MOVIE_DATA_URL = "query";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +44,12 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         isOnline();
 
+        if (savedInstanceState!= null) {
+            if (savedInstanceState.containsKey("sort")){
+                sortBy = savedInstanceState.getInt("sort");
+            }
+        }
+
         loadMovieData();
 
     }
@@ -42,8 +57,18 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private void loadMovieData() {
 
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
-        new FetchMovieDataTask().execute(movieDataUrl);
 
+        Bundle queryBundle = new Bundle();
+        queryBundle.putString(FETCH_MOVIE_DATA_URL,movieDataUrl.toString());
+
+        LoaderManager loaderManager = getSupportLoaderManager();
+        Loader<String> fetchMovieLoader = loaderManager.getLoader(MOVIES_LOADER);
+
+        if (fetchMovieLoader == null){
+            loaderManager.initLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
+        }else {
+            loaderManager.restartLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
+        }
     }
 
     @Override
@@ -53,34 +78,60 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         startActivity(intent);
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public class FetchMovieDataTask extends AsyncTask<URL, Void, String[]>{
+    @SuppressLint("StaticFieldLeak")
+    @NonNull
+    @Override
+    public Loader<String> onCreateLoader(int id, final Bundle args) {
+        return new AsyncTaskLoader<String>(this) {
 
-        @Override
-        protected String[] doInBackground(URL... urls) {
-            URL fetchUrl = urls[0];
-            String fetchResponse;
-            try{
-                fetchResponse = NetworkUtils.getResponseFromHttpUrl(fetchUrl);
-                return MovieDatabaseJson.getStringsFromJson(MainActivity.this,fetchResponse);
-            } catch (Exception e) {
+            @Override
+            protected void onStartLoading() {
+                super.onStartLoading();
+                if (args == null) {
+                    return;
+                }
+
+            }
+
+            @Override
+            public String loadInBackground() {
+                String fetchQueryUrlString = args.getString(FETCH_MOVIE_DATA_URL);
+                //System.out.println(fetchQueryUrlString);
+                if (fetchQueryUrlString == null) {
+                    return null;
+                }
+                try{
+                    URL movieUrl = new URL(fetchQueryUrlString);
+                    return NetworkUtils.getResponseFromHttpUrl(movieUrl);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<String> loader, String data) {
+        if (data != null && !data.equals("")) {
+
+            String[] jsonData = null;
+            try {
+                jsonData = MovieDatabaseJson.getStringsFromJson(getApplicationContext(),data);
+            } catch (JSONException e) {
                 e.printStackTrace();
-                return null;
             }
+            //System.out.println(jsonData);
+            movieAdapter.setPosterPath(jsonData);
         }
+        else {
+            System.out.println("null value");
+        }
+    }
 
-        @Override
-        protected void onPostExecute(String[] fetchResults) {
-            //noinspection EqualsBetweenInconvertibleTypes
-            if (fetchResults != null && !fetchResults.equals("")) {
-                    //System.out.println(movieString);
-                    movieAdapter.setPosterPath(fetchResults);
-            }
-            else {
-                System.out.println("null value");
-            }
-            super.onPostExecute(fetchResults);
-        }
+    @Override
+    public void onLoaderReset(@NonNull Loader<String> loader) {
+
     }
 
     @Override
@@ -111,11 +162,18 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     private void isOnline() {
         Runtime runtime = Runtime.getRuntime();
+        int exitValue;
         try {
             Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
-            int     exitValue = ipProcess.waitFor();
+            exitValue = ipProcess.waitFor();
         }
         catch (IOException | InterruptedException e)          { e.printStackTrace(); }
 
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("sort",sortBy);
     }
 }
