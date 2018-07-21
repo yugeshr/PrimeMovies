@@ -1,6 +1,8 @@
 package ralli.yugesh.com.primemovies;
 
 import android.annotation.SuppressLint;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.v4.content.AsyncTaskLoader;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -24,20 +26,28 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     private int sortBy = 1;
     private MovieAdapter movieAdapter;
+    private MovieAdapter favoriteAdapter;
     private static final int MOVIES_LOADER = 22;
     private static final String FETCH_MOVIE_DATA_URL = "query";
+    private SQLiteDatabase sqLiteDatabase;
+    private static Cursor cursor;
+    private static RecyclerView mMoviesList;
+    private Boolean flag = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        RecyclerView mMoviesList = findViewById(R.id.rv_posters);
+        mMoviesList = findViewById(R.id.rv_posters);
 
         GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),2);
         mMoviesList.setLayoutManager(layoutManager);
 
         mMoviesList.setHasFixedSize(true);
+
+        FavoritelistDbHelper favoritelistDbHelper = new FavoritelistDbHelper(this);
+        sqLiteDatabase = favoritelistDbHelper.getWritableDatabase();
 
         movieAdapter = new MovieAdapter(this);
         mMoviesList.setAdapter(movieAdapter);
@@ -51,10 +61,15 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         }
 
         loadMovieData();
+    }
 
+    private void removeData() {
+        sqLiteDatabase.delete(FavoritelistContract.FavortitelistEntry.TABLE_NAME,null,null);
     }
 
     private void loadMovieData() {
+
+        cursor = getAllMovies();
 
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
 
@@ -73,9 +88,48 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     @Override
     public void onClick(String selectedMovie) {
+        String[] data = null;
+        for (int i=0; i<selectedMovie.length();i++){
+            data = selectedMovie.split("---");
+        }
         Intent intent = new Intent(getApplicationContext(),DetailsActivity.class);
-        intent.putExtra(Intent.EXTRA_TEXT,selectedMovie);
+        Bundle bundle = new Bundle();
+        bundle.putString("EXTRA_POSTER",data[0]);
+        bundle.putString("EXTRA_TITLE", data[2]);
+        bundle.putString("EXTRA_PLOT",data[3]);
+        bundle.putString("EXTRA_RATING",data[4]);
+        bundle.putString("EXTRA_DATE",data[5]);
+        bundle.putString("EXTRA_ID",data[1]);
+        bundle.putBoolean("EXTRA_FLAG",flag);
+        intent.putExtras(bundle);
         startActivity(intent);
+    }
+
+    @Override
+    public void onClickFavorite(int id) {
+        flag = true;
+
+        Cursor cursor = sqLiteDatabase.rawQuery("select * from favoritelist where movieId='"+id+"'",null);
+
+        if (cursor.moveToFirst()) {
+            Intent intent = new Intent(getApplicationContext(), DetailsActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString("EXTRA_POSTER",
+                    cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_POSTER_PATH)));
+            bundle.putString("EXTRA_TITLE",
+                    cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_TITLE)));
+            bundle.putString("EXTRA_PLOT",
+                    cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_PLOT)));
+            bundle.putString("EXTRA_RATING",
+                    cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_RATING)));
+            bundle.putString("EXTRA_DATE",
+                    cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_DATE)));
+            bundle.putString("EXTRA_ID",
+                    cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_ID)));
+            bundle.putBoolean("EXTRA_FLAG",flag);
+            intent.putExtras(bundle);
+            startActivity(intent);
+        }
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -147,13 +201,28 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         switch (id){
             case R.id.action_sort_tr:
                 sortBy = 0;
+                flag = false;
+                mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 Toast.makeText(getApplicationContext(),"Sorted by Top Rated",Toast.LENGTH_LONG).show();
                 break;
             case R.id.action_sort_mp:
                 sortBy = 1;
+                flag = false;
+                mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 Toast.makeText(getApplicationContext(),"Sorted by Most Popular",Toast.LENGTH_LONG).show();
+                break;
+            case R.id.action_favorite:
+                favoriteAdapter = new MovieAdapter(this,cursor);
+                mMoviesList.setAdapter(favoriteAdapter);
+                loadMovieData();
+                Toast.makeText(getApplicationContext(),"Showing Favorite Movies",Toast.LENGTH_LONG).show();
+                break;
+            case R.id.action_remove:
+                removeData();
+                loadMovieData();
+                Toast.makeText(getApplicationContext(),"Favorites removed!",Toast.LENGTH_LONG).show();
                 break;
         }
 
@@ -175,5 +244,21 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("sort",sortBy);
+    }
+
+    private Cursor getAllMovies(){
+        return sqLiteDatabase.query(
+                FavoritelistContract.FavortitelistEntry.TABLE_NAME, null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
     }
 }

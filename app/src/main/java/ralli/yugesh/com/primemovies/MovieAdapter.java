@@ -1,6 +1,7 @@
 package ralli.yugesh.com.primemovies;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -13,15 +14,24 @@ import com.squareup.picasso.Picasso;
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHolder> {
 
     private String[] mPosterData;
+    private Cursor mCursor;
+    private int flag = 0;
 
     private final MovieAdapterOnClickHandler mClickHandler;
 
     public interface MovieAdapterOnClickHandler{
         void onClick(String selectedMovie);
+        void onClickFavorite(int id);
     }
 
     public MovieAdapter(MovieAdapterOnClickHandler clickHandler){
         mClickHandler = clickHandler;
+    }
+
+    public  MovieAdapter(MovieAdapterOnClickHandler clickHandler, Cursor cursor) {
+        mClickHandler = clickHandler;
+        mCursor = cursor;
+        flag = 1;
     }
 
     /**
@@ -36,6 +46,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHo
     @NonNull
     @Override
     public PosterViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
+
         Context context = viewGroup.getContext();
         int layoutIdForListItem = R.layout.movie_list_item;
         LayoutInflater layoutInflater = LayoutInflater.from(context);
@@ -58,7 +69,15 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHo
 
     @Override
     public void onBindViewHolder(@NonNull PosterViewHolder holder, int position) {
-        holder.bind(position);
+        if (flag == 1) {
+            if (!mCursor.moveToPosition(position))
+                return;
+            holder.bindFavorite();
+        }
+        else {
+            holder.bind(position);
+        }
+
     }
 
     /**
@@ -70,8 +89,14 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHo
 
     @Override
     public int getItemCount() {
-        if (null == mPosterData) return 0;
-        return mPosterData.length;
+        if (flag == 1) {
+            return mCursor.getCount();
+        }
+        else {
+            if (null == mPosterData) return 0;
+            return mPosterData.length;
+        }
+
     }
 
     /**
@@ -98,12 +123,25 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHo
             //mPosterDataTextView.setText(posterPath);
         }
 
+        void bindFavorite() {
+            String posterLink = mCursor.getString(mCursor
+                    .getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_POSTER_PATH));
+            String posterPath = "http://image.tmdb.org/t/p/w342/" + posterLink;
+            Picasso.get().load(posterPath).into(mImageView);
+        }
+
         @Override
         public void onClick(View view) {
             int adapterPosition = getAdapterPosition();
-            String selectedMovie = mPosterData[adapterPosition];
-            mClickHandler.onClick(selectedMovie);
-
+            if (flag == 1) {
+                mCursor.moveToPosition(adapterPosition);
+                int id = mCursor.getInt(mCursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_ID));
+                mClickHandler.onClickFavorite(id);
+            }
+            else {
+                String selectedMovie = mPosterData[adapterPosition];
+                mClickHandler.onClick(selectedMovie);
+            }
         }
     }
 
