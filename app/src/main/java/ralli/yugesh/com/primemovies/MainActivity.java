@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.support.v4.content.CursorLoader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -30,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private static final int MOVIES_LOADER = 22;
     private static final String FETCH_MOVIE_DATA_URL = "query";
     private SQLiteDatabase sqLiteDatabase;
-    private static Cursor cursor;
+    private static Cursor mCursor;
     private static RecyclerView mMoviesList;
     private Boolean flag = false;
 
@@ -63,13 +64,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         loadMovieData();
     }
 
-    private void removeData() {
-        sqLiteDatabase.delete(FavoritelistContract.FavortitelistEntry.TABLE_NAME,null,null);
-    }
-
     private void loadMovieData() {
 
-        cursor = getAllMovies();
+        mCursor = getAllMovies();
 
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
 
@@ -84,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         }else {
             loaderManager.restartLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
         }
+
+
     }
 
     @Override
@@ -181,6 +180,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         else {
             System.out.println("null value");
         }
+
     }
 
     @Override
@@ -214,15 +214,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 Toast.makeText(getApplicationContext(),"Sorted by Most Popular",Toast.LENGTH_LONG).show();
                 break;
             case R.id.action_favorite:
-                favoriteAdapter = new MovieAdapter(this,cursor);
+                loadMovieData();
+                favoriteAdapter = new MovieAdapter(this,mCursor);
                 mMoviesList.setAdapter(favoriteAdapter);
-                loadMovieData();
                 Toast.makeText(getApplicationContext(),"Showing Favorite Movies",Toast.LENGTH_LONG).show();
-                break;
-            case R.id.action_remove:
-                removeData();
-                loadMovieData();
-                Toast.makeText(getApplicationContext(),"Favorites removed!",Toast.LENGTH_LONG).show();
                 break;
         }
 
@@ -247,18 +242,17 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     }
 
     private Cursor getAllMovies(){
-        return sqLiteDatabase.query(
-                FavoritelistContract.FavortitelistEntry.TABLE_NAME, null,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+        try {
+            return getContentResolver()
+                    .query(FavoritelistContract.FavortitelistEntry.CONTENT_URI,
+                            null,null,null,null);
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
     }
 
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-    }
 }

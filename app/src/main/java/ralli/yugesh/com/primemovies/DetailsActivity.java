@@ -3,8 +3,12 @@ package ralli.yugesh.com.primemovies;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
-import android.support.v7.app.AppCompatActivity;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -40,9 +44,6 @@ public class DetailsActivity extends AppCompatActivity {
         FavoritelistDbHelper favoritelistDbHelper = new FavoritelistDbHelper(this);
         sqLiteDatabase = favoritelistDbHelper.getWritableDatabase();
 
-        Button btnFavorite = findViewById(R.id.btn_favorite);
-        Button btnRemove = findViewById(R.id.btn_remove);
-
         Intent parent = getIntent();
         Bundle bundle = parent.getExtras();
         assert bundle != null;
@@ -53,14 +54,6 @@ public class DetailsActivity extends AppCompatActivity {
         date = bundle.getString("EXTRA_DATE");
         id = bundle.getString("EXTRA_ID");
         flag = bundle.getBoolean("EXTRA_FLAG");
-
-        System.out.println(id);
-
-        if (flag) {
-            btnRemove.setVisibility(View.VISIBLE);
-        }else {
-            btnRemove.setVisibility(View.INVISIBLE);
-        }
 
         titleView.setText(title);
         plotView.setText(plot);
@@ -74,21 +67,45 @@ public class DetailsActivity extends AppCompatActivity {
         String posterPath = "http://image.tmdb.org/t/p/w185/" + posterData;
         Picasso.get().load(posterPath).into(posterView);
 
-        btnFavorite.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(getApplicationContext(),"Movie added to favorites!", Toast.LENGTH_SHORT).show();
-                addNewMovie();
-            }
-        });
+        /*Toast.makeText(getApplicationContext(),"Movie added to favorites!", Toast.LENGTH_SHORT).show();
+        addNewMovie();
 
-        btnRemove.setOnClickListener(new View.OnClickListener() {
+        String whereClause = "movieId=?";
+        String[] whereArgs = new String[] {id};
+        sqLiteDatabase.delete(FavoritelistContract.FavortitelistEntry.TABLE_NAME,whereClause,whereArgs);
+        finish();*/
+
+        final FloatingActionButton fab = findViewById(R.id.fab);
+        if (flag) {
+            fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
+        }else {
+            fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_off));
+        }
+
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String whereClause = "movieId=?";
-                String[] whereArgs = new String[] {id};
-                sqLiteDatabase.delete(FavoritelistContract.FavortitelistEntry.TABLE_NAME,whereClause,whereArgs);
-                finish();
+                if (flag){
+                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_off));
+
+                    String whereClause = "movieId=?";
+                    String[] whereArgs = new String[] {id};
+                    getContentResolver().delete(FavoritelistContract.FavortitelistEntry.CONTENT_URI,whereClause,whereArgs);
+
+                    Snackbar.make(view, "Removed from favorites", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                    flag = false;
+                }
+                else if(!flag){
+                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
+
+                    addNewMovie();
+
+                    Snackbar.make(view, "Added to favorites", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                    flag = true;
+                }
+
             }
         });
 
@@ -105,6 +122,6 @@ public class DetailsActivity extends AppCompatActivity {
         cv.put(FavoritelistContract.FavortitelistEntry.COLUMN_RATING,ratingData);
         cv.put(FavoritelistContract.FavortitelistEntry.COLUMN_DATE,date);
 
-        sqLiteDatabase.insert(FavoritelistContract.FavortitelistEntry.TABLE_NAME, null, cv);
+        Uri uri = getContentResolver().insert(FavoritelistContract.FavortitelistEntry.CONTENT_URI,cv);
     }
 }

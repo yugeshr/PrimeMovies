@@ -12,10 +12,10 @@ import java.util.Scanner;
 final class NetworkUtils {
 
     private static final String MOVIE_BASE_URL_POPULAR = "https://api.themoviedb.org/3/movie/popular?" +
-            "api_key="; // TODO : Insert Api Key
+            "api_key="; //TODO : Add api here
 
     private static final String MOVIE_BASE_URL_RATED = "https://api.themoviedb.org/3/movie/top_rated?" +
-            "api_key="; // TODO : Insert Api Key
+            "api_key="; // TODO : Add api here
 
     private static final String PARAM_LANGUAGE = "language";
     private static final String language = "en-US";

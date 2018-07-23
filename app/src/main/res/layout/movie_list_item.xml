@@ -4,8 +4,8 @@
     android:layout_height="wrap_content">
 
         <ImageView
+            android:layout_marginTop="0dp"
             android:id="@+id/iv_thumbnail_data"
-            android:baselineAlignBottom="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/poster" />
