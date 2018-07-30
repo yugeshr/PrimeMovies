@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+        <android.support.v7.widget.CardView
+            android:padding="8dp"
+            android:layout_margin="8dp"
+            app:cardBackgroundColor="@android:color/holo_green_dark"
+            android:layout_width="560dp"
+            android:layout_gravity="center"
+            app:cardCornerRadius="5dp"
+            android:layout_height="140dp">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/tv_review"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_width="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:layout_height="wrap_content"
+                    android:maxLines="4"
+                    android:ellipsize="end"/>
+
+                <TextView
+                    android:id="@+id/tv_author"
+                    android:layout_below="@id/tv_review"
+                    android:layout_marginStart="10dp"
+                    android:layout_width="wrap_content"
+                    android:textColor="#f6f6f6"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+
+            </RelativeLayout>
+
+        </android.support.v7.widget.CardView>
+
+</FrameLayout>

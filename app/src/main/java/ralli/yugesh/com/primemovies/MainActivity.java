@@ -1,8 +1,8 @@
 package ralli.yugesh.com.primemovies;
 
 import android.annotation.SuppressLint;
-import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
@@ -18,7 +18,6 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import org.json.JSONException;
 
@@ -36,7 +35,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private static Cursor mCursor;
     private static RecyclerView mMoviesList;
     private Boolean flag = false;
-    private ProgressDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,10 +42,14 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         setContentView(R.layout.activity_main);
 
         mMoviesList = findViewById(R.id.rv_posters);
-        dialog = new ProgressDialog(this);
 
-        GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),2);
-        mMoviesList.setLayoutManager(layoutManager);
+        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
+            GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),3);
+            mMoviesList.setLayoutManager(layoutManager);
+        }else {
+            GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),2);
+            mMoviesList.setLayoutManager(layoutManager);
+        }
 
         mMoviesList.setHasFixedSize(true);
 
@@ -63,9 +65,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             if (savedInstanceState.containsKey("sort")){
                 sortBy = savedInstanceState.getInt("sort");
             }
-        }
-        if (dialog.isShowing()) {
-            dialog.dismiss();
         }
 
         loadMovieData();
@@ -154,8 +153,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             @Override
             protected void onStartLoading() {
                 super.onStartLoading();
-                dialog.setMessage("Please wait...");
-                dialog.show();
                 if (args == null) {
                     return;
                 }
@@ -182,9 +179,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     @Override
     public void onLoadFinished(@NonNull Loader<String> loader, String data) {
-        if (dialog.isShowing()) {
-            dialog.dismiss();
-        }
         if (data != null && !data.equals("")) {
 
             String[] jsonData = null;
@@ -223,28 +217,25 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 flag = false;
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
-                Toast.makeText(getApplicationContext(),"Sorted by Top Rated",Toast.LENGTH_LONG).show();
                 break;
             case R.id.action_sort_mp:
                 sortBy = 1;
                 flag = false;
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
-                Toast.makeText(getApplicationContext(),"Sorted by Most Popular",Toast.LENGTH_LONG).show();
                 break;
             case R.id.action_favorite:
                 loadMovieData();
                 favoriteAdapter = new MovieAdapter(this,mCursor);
                 mMoviesList.setAdapter(favoriteAdapter);
                 favoriteAdapter.notifyDataSetChanged();
-                Toast.makeText(getApplicationContext(),"Showing Favorite Movies",Toast.LENGTH_LONG).show();
                 break;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    private boolean isOnline() {
+    private void isOnline() {
         boolean haveConnectedWifi = false;
         boolean haveConnectedMobile = false;
 
@@ -258,7 +249,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 if (ni.isConnected())
                     haveConnectedMobile = true;
         }
-        return haveConnectedWifi || haveConnectedMobile;
 
     }
 
@@ -281,5 +271,4 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         }
 
     }
-
 }

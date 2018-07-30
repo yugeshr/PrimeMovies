@@ -58,7 +58,7 @@ public class TrailersAdapter extends RecyclerView.Adapter<TrailersAdapter.Traile
         }
 
         void bind(int position) {
-            trailerView.setText("Trailer " + String.valueOf(position));
+            trailerView.setText("Trailer " + String.valueOf(position+1));
         }
 
         @Override

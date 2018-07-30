@@ -32,10 +32,6 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
 
     private ReviewsAdapter reviewsAdapter;
     private TrailersAdapter trailersAdapter;
-    private static RecyclerView mReviewsList;
-    private static RecyclerView mTrailersList;
-    private LinearLayoutManager HorizontalLayout;
-    private LinearLayoutManager HorizontalLayout2;
 
     private String posterData;
     private String title;
@@ -62,17 +58,17 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         id = bundle.getString("EXTRA_ID");
         flag = bundle.getBoolean("EXTRA_FLAG");
 
-        mReviewsList = findViewById(R.id.rv_reviews);
+        RecyclerView mReviewsList = findViewById(R.id.rv_reviews);
         mReviewsList.setHasFixedSize(true);
 
-        mTrailersList = findViewById(R.id.rv_trailers);
+        RecyclerView mTrailersList = findViewById(R.id.rv_trailers);
         mTrailersList.setHasFixedSize(true);
 
         LayoutManager trailersLayoutManager = new LinearLayoutManager(this);
         mTrailersList.setLayoutManager(trailersLayoutManager);
 
-        HorizontalLayout2 = new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false);
-        mTrailersList.setLayoutManager(HorizontalLayout2);
+        LinearLayoutManager horizontalLayout2 = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        mTrailersList.setLayoutManager(horizontalLayout2);
 
         trailersAdapter = new TrailersAdapter(this);
         mTrailersList.setAdapter(trailersAdapter);
@@ -80,8 +76,8 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         LayoutManager reviewsLayoutManager = new LinearLayoutManager(this);
         mReviewsList.setLayoutManager(reviewsLayoutManager);
 
-        HorizontalLayout = new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false);
-        mReviewsList.setLayoutManager(HorizontalLayout);
+        LinearLayoutManager horizontalLayout = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        mReviewsList.setLayoutManager(horizontalLayout);
 
         reviewsAdapter = new ReviewsAdapter();
         mReviewsList.setAdapter(reviewsAdapter);
@@ -168,7 +164,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         cv.put(FavoritelistContract.FavortitelistEntry.COLUMN_RATING,ratingData);
         cv.put(FavoritelistContract.FavortitelistEntry.COLUMN_DATE,date);
 
-        Uri uri = getContentResolver().insert(FavoritelistContract.FavortitelistEntry.CONTENT_URI,cv);
+        @SuppressWarnings("unused") Uri uri = getContentResolver().insert(FavoritelistContract.FavortitelistEntry.CONTENT_URI,cv);
     }
 
     private void loadData(String id){
@@ -273,7 +269,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
     private void setYtLink(String[] data) {
         String[] trailer = new String[data.length];
 
-        for(int j=0; j<data.length;j++){
+        for (String aData : data) {
             trailer = data;
         }
         trailersAdapter.setTrailerData(trailer);
@@ -286,7 +282,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
 
         for (int j=0;j<data.length;j++) {
 
-            for (int i=0; i<data.length;i++){
+            for (String aData : data) {
                 reviewData = data[j].split("---");
                 author[j] = reviewData[0];
                 content[j] = reviewData[1];
