@@ -1,19 +1,13 @@
 package ralli.yugesh.com.primemovies;
 
 import android.content.Context;
-import android.nfc.Tag;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.Adapter;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-import java.util.Arrays;
-
-import static android.content.ContentValues.TAG;
 
 public class ReviewsAdapter extends Adapter<ReviewsAdapter.ReviewViewHolder>  {
 
@@ -56,11 +50,11 @@ public class ReviewsAdapter extends Adapter<ReviewsAdapter.ReviewViewHolder>  {
 
     public class ReviewViewHolder extends RecyclerView.ViewHolder{
 
-        public ReviewViewHolder(View itemView) {
+        ReviewViewHolder(View itemView) {
             super(itemView);
         }
 
-        public void bind(int position) {
+        void bind(int position) {
             authorView.setText("By "+ mAuthorData[position]);
             reviewView.setText(mReviewData[position]);
         }

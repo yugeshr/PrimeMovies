@@ -21,7 +21,7 @@ public class FavoritelistContentProvider extends ContentProvider {
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
 
-    public static UriMatcher buildUriMatcher(){
+    private static UriMatcher buildUriMatcher(){
         UriMatcher uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         uriMatcher.addURI(FavoritelistContract.AUTHORITY,FavoritelistContract.PATH,FAVORITELIST);
 

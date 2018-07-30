@@ -7,10 +7,8 @@ import android.support.v4.app.LoaderManager;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.support.v4.content.Loader;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.AsyncTaskLoader;
@@ -19,31 +17,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.LayoutManager;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONException;
 
 import java.net.URL;
-import java.util.Arrays;
 
 public class DetailsActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String>,
 TrailersAdapter.TrailersAdapterOnClickHandler{
 
-    private static final String TAG = "LOG";
     private ReviewsAdapter reviewsAdapter;
     private TrailersAdapter trailersAdapter;
     private static RecyclerView mReviewsList;
     private static RecyclerView mTrailersList;
-    LinearLayoutManager HorizontalLayout;
-    LinearLayoutManager HorizontalLayout2;
+    private LinearLayoutManager HorizontalLayout;
+    private LinearLayoutManager HorizontalLayout2;
 
     private String posterData;
     private String title;
@@ -278,7 +270,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
 
     }
 
-    public void setYtLink(String[] data) {
+    private void setYtLink(String[] data) {
         String[] trailer = new String[data.length];
 
         for(int j=0; j<data.length;j++){
@@ -287,7 +279,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         trailersAdapter.setTrailerData(trailer);
     }
 
-    public void setReviews(String[] data) throws NullPointerException {
+    private void setReviews(String[] data) throws NullPointerException {
         String[] author = new String[data.length];
         String[] content = new String[data.length];
         String[] reviewData;
