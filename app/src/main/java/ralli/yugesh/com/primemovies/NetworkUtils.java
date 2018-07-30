@@ -11,14 +11,18 @@ import java.util.Scanner;
 
 final class NetworkUtils {
 
-    private static final String MOVIE_BASE_URL_POPULAR = "https://api.themoviedb.org/3/movie/popular?" +
-            "api_key="; //TODO : Add api here
+    private static final String API_KEY = ""; //TODO: Add api key here
 
-    private static final String MOVIE_BASE_URL_RATED = "https://api.themoviedb.org/3/movie/top_rated?" +
-            "api_key="; // TODO : Add api here
+    private static final String MOVIE_BASE_URL_POPULAR = "https://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY;
+
+    private static final String MOVIE_BASE_URL_RATED = "https://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY;
+
+    private static final String MOVIE_BASE_URL_TRAILERS = "https://api.themoviedb.org/3/movie/";
 
     private static final String PARAM_LANGUAGE = "language";
     private static final String language = "en-US";
+    private static final String videos = "/videos?";
+    private static final String reviews = "/reviews?";
 
     /**
      * Builds the URL used to fetch data from tmdb.
@@ -58,6 +62,34 @@ final class NetworkUtils {
      * @return The contents of the HTTP response.
      * @throws IOException Related to network and stream reading
      */
+
+    public static URL buildTrailerUrl (String id){
+        URL url = null;
+
+        String updatedBaseUrl = MOVIE_BASE_URL_TRAILERS + id + videos + "api_key=" + API_KEY;
+        Uri builtUri = Uri.parse(updatedBaseUrl).buildUpon().build();
+
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return url;
+    }
+
+    public static URL buildReviewUrl (String id){
+        URL url = null;
+
+        String updatedBaseUrl = MOVIE_BASE_URL_TRAILERS + id + reviews + "api_key=" + API_KEY;
+        Uri builtUri = Uri.parse(updatedBaseUrl).buildUpon().build();
+
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return url;
+    }
 
     public static String getResponseFromHttpUrl(URL url) throws IOException {
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();

@@ -8,7 +8,7 @@ import org.json.JSONObject;
 
 class MovieDatabaseJson {
 
-    public static String[] getStringsFromJson(Context context, String movieJsonStr)
+    public static String[] getStringsFromJson(String movieJsonStr)
             throws JSONException {
 
         /* Movie information. Each movie's info is an element of the "results" array */
@@ -50,6 +50,59 @@ class MovieDatabaseJson {
             parsedMovieData[i] = posterPath + "---" + id + "---" + title +"---"+ plot +"---"+ rating +"---"+ date;
             //System.out.println(parsedMovieData[i]);
 
+        }
+        return parsedMovieData;
+    }
+
+    public static String[] getTrailerStringsFromJson(String movieJsonStr)
+            throws JSONException {
+
+        final String DATA_LIST = "results";
+        final String DATA_KEY = "key";
+
+        String[] parsedMovieData;
+
+        JSONObject moviesJson = new JSONObject(movieJsonStr);
+
+        JSONArray resultArray = moviesJson.getJSONArray(DATA_LIST);
+
+        parsedMovieData = new String[resultArray.length()];
+
+        for (int i=0; i< resultArray.length();i++){
+            String key;
+
+            JSONObject movie = resultArray.getJSONObject(i);
+            key = movie.getString(DATA_KEY);
+
+            parsedMovieData[i] = key;
+        }
+        return parsedMovieData;
+    }
+
+    public static String[] getReviewStringsFromJson(String movieJsonStr)
+            throws JSONException {
+
+        final String DATA_LIST = "results";
+        final String DATA_AUTHOR = "author";
+        final String DATA_CONTENT = "content";
+
+        String[] parsedMovieData;
+
+        JSONObject moviesJson = new JSONObject(movieJsonStr);
+
+        JSONArray resultArray = moviesJson.getJSONArray(DATA_LIST);
+
+        parsedMovieData = new String[resultArray.length()];
+
+        for (int i=0; i< resultArray.length();i++){
+            String author;
+            String content;
+
+            JSONObject movie = resultArray.getJSONObject(i);
+            author = movie.getString(DATA_AUTHOR);
+            content = movie.getString(DATA_CONTENT);
+
+            parsedMovieData[i] = author + "---" + content;
         }
         return parsedMovieData;
     }

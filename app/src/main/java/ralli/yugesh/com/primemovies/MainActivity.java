@@ -1,14 +1,17 @@
 package ralli.yugesh.com.primemovies;
 
 import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.support.v4.content.AsyncTaskLoader;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
-import android.support.v4.content.CursorLoader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -19,7 +22,6 @@ import android.widget.Toast;
 
 import org.json.JSONException;
 
-import java.io.IOException;
 import java.net.URL;
 
 public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler,
@@ -34,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private static Cursor mCursor;
     private static RecyclerView mMoviesList;
     private Boolean flag = false;
+    private ProgressDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         setContentView(R.layout.activity_main);
 
         mMoviesList = findViewById(R.id.rv_posters);
+        dialog = new ProgressDialog(this);
 
         GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),2);
         mMoviesList.setLayoutManager(layoutManager);
@@ -60,13 +64,23 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 sortBy = savedInstanceState.getInt("sort");
             }
         }
+        if (dialog.isShowing()) {
+            dialog.dismiss();
+        }
 
         loadMovieData();
     }
 
     private void loadMovieData() {
 
-        mCursor = getAllMovies();
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mCursor = getAllMovies();
+            }
+        });
+
+        thread.start();
 
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
 
@@ -87,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     @Override
     public void onClick(String selectedMovie) {
-        String[] data = null;
+        String[] data = new String[selectedMovie.length()];
         for (int i=0; i<selectedMovie.length();i++){
             data = selectedMovie.split("---");
         }
@@ -140,6 +154,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             @Override
             protected void onStartLoading() {
                 super.onStartLoading();
+                dialog.setMessage("Please wait...");
+                dialog.show();
                 if (args == null) {
                     return;
                 }
@@ -166,11 +182,14 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     @Override
     public void onLoadFinished(@NonNull Loader<String> loader, String data) {
+        if (dialog.isShowing()) {
+            dialog.dismiss();
+        }
         if (data != null && !data.equals("")) {
 
             String[] jsonData = null;
             try {
-                jsonData = MovieDatabaseJson.getStringsFromJson(getApplicationContext(),data);
+                jsonData = MovieDatabaseJson.getStringsFromJson(data);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -217,6 +236,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 loadMovieData();
                 favoriteAdapter = new MovieAdapter(this,mCursor);
                 mMoviesList.setAdapter(favoriteAdapter);
+                favoriteAdapter.notifyDataSetChanged();
                 Toast.makeText(getApplicationContext(),"Showing Favorite Movies",Toast.LENGTH_LONG).show();
                 break;
         }
@@ -224,14 +244,21 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         return super.onOptionsItemSelected(item);
     }
 
-    private void isOnline() {
-        Runtime runtime = Runtime.getRuntime();
-        int exitValue;
-        try {
-            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
-            exitValue = ipProcess.waitFor();
+    private boolean isOnline() {
+        boolean haveConnectedWifi = false;
+        boolean haveConnectedMobile = false;
+
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+        for (NetworkInfo ni : netInfo) {
+            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
+                if (ni.isConnected())
+                    haveConnectedWifi = true;
+            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
+                if (ni.isConnected())
+                    haveConnectedMobile = true;
         }
-        catch (IOException | InterruptedException e)          { e.printStackTrace(); }
+        return haveConnectedWifi || haveConnectedMobile;
 
     }
 
