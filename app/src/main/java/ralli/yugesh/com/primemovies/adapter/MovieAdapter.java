@@ -1,4 +1,4 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.adapter;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -10,6 +10,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.squareup.picasso.Picasso;
+
+import ralli.yugesh.com.primemovies.R;
+import ralli.yugesh.com.primemovies.data.FavoritelistContract;
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHolder> {
 
@@ -69,7 +72,6 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.PosterViewHo
             if (null == mPosterData) return 0;
             return mPosterData.length;
         }
-
     }
 
     public class PosterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{

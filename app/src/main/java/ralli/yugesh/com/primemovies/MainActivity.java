@@ -2,6 +2,7 @@ package ralli.yugesh.com.primemovies;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -16,6 +17,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -23,15 +25,21 @@ import org.json.JSONException;
 
 import java.net.URL;
 
+import ralli.yugesh.com.primemovies.adapter.MovieAdapter;
+import ralli.yugesh.com.primemovies.data.FavoritelistContract;
+import ralli.yugesh.com.primemovies.data.FavoritelistDbHelper;
+import ralli.yugesh.com.primemovies.utils.MovieDatabaseJson;
+import ralli.yugesh.com.primemovies.utils.NetworkUtils;
+
 public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler,
         LoaderManager.LoaderCallbacks<String> {
 
+    private static final String TAG = "LOG";
     private int sortBy = 1;
     private MovieAdapter movieAdapter;
     private MovieAdapter favoriteAdapter;
     private static final int MOVIES_LOADER = 22;
     private static final String FETCH_MOVIE_DATA_URL = "query";
-    private SQLiteDatabase sqLiteDatabase;
     private static Cursor mCursor;
     private static RecyclerView mMoviesList;
     private Boolean flag = false;
@@ -54,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mMoviesList.setHasFixedSize(true);
 
         FavoritelistDbHelper favoritelistDbHelper = new FavoritelistDbHelper(this);
-        sqLiteDatabase = favoritelistDbHelper.getWritableDatabase();
+        SQLiteDatabase sqLiteDatabase = favoritelistDbHelper.getWritableDatabase();
 
         movieAdapter = new MovieAdapter(this);
         mMoviesList.setAdapter(movieAdapter);
@@ -72,14 +80,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     private void loadMovieData() {
 
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                mCursor = getAllMovies();
-            }
-        });
-
-        thread.start();
+        Log.d(TAG,"loadMovieData()");
+        mCursor = getAllMovies();
 
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
 
@@ -94,8 +96,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         }else {
             loaderManager.restartLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
         }
-
-
+        mCursor.close();
     }
 
     @Override
@@ -121,8 +122,15 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     public void onClickFavorite(int id) {
         flag = true;
 
-        Cursor cursor = sqLiteDatabase.rawQuery("select * from favoritelist where movieId='"+id+"'",null);
+        Cursor cursor = getApplicationContext()
+                .getContentResolver()
+                .query(FavoritelistContract.FavortitelistEntry.CONTENT_URI,
+                        null,
+                        FavoritelistContract.FavortitelistEntry.COLUMN_ID + "=?",
+                        new String[]{String.valueOf(id)},
+                        null);
 
+        assert cursor != null;
         if (cursor.moveToFirst()) {
             Intent intent = new Intent(getApplicationContext(), DetailsActivity.class);
             Bundle bundle = new Bundle();
@@ -139,6 +147,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             bundle.putString("EXTRA_ID",
                     cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_ID)));
             bundle.putBoolean("EXTRA_FLAG",flag);
+
+            cursor.close();
             intent.putExtras(bundle);
             startActivity(intent);
         }
@@ -224,12 +234,14 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 break;
-            case R.id.action_favorite:
-                loadMovieData();
-                favoriteAdapter = new MovieAdapter(this,mCursor);
+            case R.id.action_favorite: {
+                flag = true;
+                mCursor = getAllMovies();
+                favoriteAdapter = new MovieAdapter(this, mCursor);
                 mMoviesList.setAdapter(favoriteAdapter);
                 favoriteAdapter.notifyDataSetChanged();
                 break;
+            }
         }
 
         return super.onOptionsItemSelected(item);
@@ -244,10 +256,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         for (NetworkInfo ni : netInfo) {
             if (ni.getTypeName().equalsIgnoreCase("WIFI"))
                 if (ni.isConnected())
-                    haveConnectedWifi = true;
             if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
                 if (ni.isConnected())
-                    haveConnectedMobile = true;
         }
 
     }
@@ -263,12 +273,24 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             return getContentResolver()
                     .query(FavoritelistContract.FavortitelistEntry.CONTENT_URI,
                             null,null,null,null);
-
         }
         catch (Exception e){
             e.printStackTrace();
             return null;
         }
+    }
 
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d(TAG,"onRestart()");
+        SharedPreferences preferences = getSharedPreferences("moviefavorite", 0);
+        Boolean val = preferences.getBoolean("val",false);
+        if (val) {
+            mCursor = getAllMovies();
+            favoriteAdapter = new MovieAdapter(this,mCursor);
+            mMoviesList.setAdapter(favoriteAdapter);
+            favoriteAdapter.notifyDataSetChanged();
+        }
     }
 }

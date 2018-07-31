@@ -1,4 +1,4 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.utils;
 
 import android.net.Uri;
 
@@ -9,9 +9,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Scanner;
 
-final class NetworkUtils {
+import ralli.yugesh.com.primemovies.BuildConfig;
 
-    private static final String API_KEY = ""; //TODO: Add api key here
+public final class NetworkUtils {
+
+    private NetworkUtils(){}
+
+    private static final String API_KEY = BuildConfig.MovieDbApiKey;
 
     private static final String MOVIE_BASE_URL_POPULAR = "https://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY;
 
@@ -62,6 +66,7 @@ final class NetworkUtils {
      * @throws IOException Related to network and stream reading
      */
 
+    @SuppressWarnings("JavaDoc")
     public static URL buildTrailerUrl (String id){
         URL url = null;
 

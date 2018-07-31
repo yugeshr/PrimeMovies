@@ -2,6 +2,7 @@ package ralli.yugesh.com.primemovies;
 
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.content.ContentValues;
@@ -10,26 +11,32 @@ import android.support.v4.content.Loader;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.LayoutManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-
+import android.widget.Toast;
 import com.squareup.picasso.Picasso;
-
 import org.json.JSONException;
-
 import java.net.URL;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import ralli.yugesh.com.primemovies.adapter.ReviewsAdapter;
+import ralli.yugesh.com.primemovies.adapter.TrailersAdapter;
+import ralli.yugesh.com.primemovies.data.FavoritelistContract;
+import ralli.yugesh.com.primemovies.utils.MovieDatabaseJson;
+import ralli.yugesh.com.primemovies.utils.NetworkUtils;
 
 public class DetailsActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String>,
 TrailersAdapter.TrailersAdapterOnClickHandler{
 
+    private static final String TAG = "Log";
     private ReviewsAdapter reviewsAdapter;
     private TrailersAdapter trailersAdapter;
 
@@ -39,14 +46,36 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
     private String ratingData;
     private String date;
     private String id;
-    private Boolean flag;
 
+    @BindView(R.id.rv_trailers)
+    private RecyclerView mTrailersList;
+    @BindView(R.id.rv_reviews)
+    private RecyclerView mReviewsList;
+
+    @BindView(R.id.tv_title)
+    private TextView titleView;
+    @BindView(R.id.tv_plot)
+    private TextView plotView;
+    @BindView(R.id.tv_rating)
+    private TextView ratingView;
+    @BindView(R.id.tv_releasedate)
+    private TextView dateView;
+    @BindView(R.id.iv_poster)
+    private ImageView posterView;
+    @BindView(R.id.fab)
+    private FloatingActionButton fab;
+
+    private SharedPreferences pref;
+
+    private static final String MOVIE_FAVORITE = "moviefavorite";
     private static final String POSTER_URL = "http://image.tmdb.org/t/p/w185/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_details);
+
+        ButterKnife.bind(this);
 
         Intent parent = getIntent();
         Bundle bundle = parent.getExtras();
@@ -56,12 +85,9 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         ratingData = bundle.getString("EXTRA_RATING");
         date = bundle.getString("EXTRA_DATE");
         id = bundle.getString("EXTRA_ID");
-        flag = bundle.getBoolean("EXTRA_FLAG");
+        Boolean flag1 = bundle.getBoolean("EXTRA_FLAG");
 
-        RecyclerView mReviewsList = findViewById(R.id.rv_reviews);
         mReviewsList.setHasFixedSize(true);
-
-        RecyclerView mTrailersList = findViewById(R.id.rv_trailers);
         mTrailersList.setHasFixedSize(true);
 
         LayoutManager trailersLayoutManager = new LinearLayoutManager(this);
@@ -82,12 +108,6 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         reviewsAdapter = new ReviewsAdapter();
         mReviewsList.setAdapter(reviewsAdapter);
 
-        TextView titleView = findViewById(R.id.tv_title);
-        TextView plotView = findViewById(R.id.tv_plot);
-        TextView ratingView = findViewById(R.id.tv_rating);
-        TextView dateView = findViewById(R.id.tv_releasedate);
-        ImageView posterView = findViewById(R.id.iv_poster);
-
         titleView.setText(title);
         plotView.setText(plot);
 
@@ -100,7 +120,10 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         String posterPath = POSTER_URL + posterData;
         Picasso.get().load(posterPath).into(posterView);
 
-        final FloatingActionButton fab = findViewById(R.id.fab);
+        pref = getSharedPreferences(MOVIE_FAVORITE, 0);
+        final Boolean flag = pref.getBoolean("Favorite "+id, false);
+        Log.d("Favorite "+id, flag.toString());
+
         if (flag) {
             fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
         }else {
@@ -111,46 +134,29 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
             @Override
             public void onClick(View view) {
                 if (flag){
-                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_off));
-
                     String whereClause = "movieId=?";
                     String[] whereArgs = new String[] {id};
                     getContentResolver().delete(FavoritelistContract.FavortitelistEntry.CONTENT_URI,whereClause,whereArgs);
 
-                    Snackbar.make(view, "Removed from favorites", Snackbar.LENGTH_SHORT)
-                            .setAction("Action", null).show();
-                    flag = false;
+                    SharedPreferences.Editor editor = getSharedPreferences(MOVIE_FAVORITE, MODE_PRIVATE).edit();
+                    editor.putBoolean("Favorite "+id, false);
+                    editor.putBoolean("val",true);
+                    editor.apply();
+                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_off));
                 }
                 else if(!flag){
-                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
-
                     addNewMovie();
-
-                    Snackbar.make(view, "Added to favorites", Snackbar.LENGTH_SHORT)
-                            .setAction("Action", null).show();
-                    flag = true;
+                    SharedPreferences.Editor editor = getSharedPreferences(MOVIE_FAVORITE, MODE_PRIVATE).edit();
+                    editor.putBoolean("Favorite "+id, true);
+                    editor.putBoolean("val",false);
+                    editor.apply();
+                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
                 }
 
             }
         });
 
         loadData(id);
-
-        /*trailerView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + ytLink));
-                Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("http://www.youtube.com/watch?v=" + ytLink));
-                try {
-                    startActivity(appIntent);
-                } catch (ActivityNotFoundException ex) {
-                    startActivity(webIntent);
-                }
-
-            }
-        });*/
-
     }
 
     private void addNewMovie(){
@@ -164,7 +170,13 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         cv.put(FavoritelistContract.FavortitelistEntry.COLUMN_RATING,ratingData);
         cv.put(FavoritelistContract.FavortitelistEntry.COLUMN_DATE,date);
 
-        @SuppressWarnings("unused") Uri uri = getContentResolver().insert(FavoritelistContract.FavortitelistEntry.CONTENT_URI,cv);
+        Uri uri = getContentResolver().insert(FavoritelistContract.FavortitelistEntry.CONTENT_URI,cv);
+        if(uri != null) {
+            Toast.makeText(getApplicationContext(),"Added movie to favorites",Toast.LENGTH_SHORT).show();
+        }
+        else{
+            Toast.makeText(getApplicationContext(),"Failed to add movie to favorites",Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadData(String id){
@@ -302,5 +314,11 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         } catch (ActivityNotFoundException ex) {
             startActivity(webIntent);
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelable("KeyForLayoutManagerState", mTrailersList.getLayoutManager().onSaveInstanceState());
     }
 }

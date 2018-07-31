@@ -1,4 +1,4 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.data;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;

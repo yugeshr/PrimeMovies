@@ -1,10 +1,10 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.utils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-class MovieDatabaseJson {
+public class MovieDatabaseJson {
 
     public static String[] getStringsFromJson(String movieJsonStr)
             throws JSONException {

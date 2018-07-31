@@ -1,10 +1,10 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.data;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-class FavoritelistDbHelper extends SQLiteOpenHelper{
+public class FavoritelistDbHelper extends SQLiteOpenHelper{
 
     private static final String DATABASE_NAME = "favoritelist.db";
     private static final int DATABASE_VERSION = 1;

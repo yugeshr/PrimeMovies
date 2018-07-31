@@ -1,9 +1,9 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.data;
 
 import android.net.Uri;
 import android.provider.BaseColumns;
 
-class FavoritelistContract {
+public class FavoritelistContract {
 
     public static final String AUTHORITY = "ralli.yugesh.com.primemovies";
     private static final Uri BASE_CONTENT_URI = Uri.parse("content://" + AUTHORITY);
