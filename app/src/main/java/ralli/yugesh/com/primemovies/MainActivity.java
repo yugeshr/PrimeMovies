@@ -67,8 +67,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         movieAdapter = new MovieAdapter(this);
         mMoviesList.setAdapter(movieAdapter);
 
-        isOnline();
-
         if (savedInstanceState!= null) {
             if (savedInstanceState.containsKey("sort")){
                 sortBy = savedInstanceState.getInt("sort");
@@ -79,8 +77,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     }
 
     private void loadMovieData() {
-
-        Log.d(TAG,"loadMovieData()");
         mCursor = getAllMovies();
 
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
@@ -120,8 +116,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     @Override
     public void onClickFavorite(int id) {
-        flag = true;
-
         Cursor cursor = getApplicationContext()
                 .getContentResolver()
                 .query(FavoritelistContract.FavortitelistEntry.CONTENT_URI,
@@ -146,7 +140,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                     cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_DATE)));
             bundle.putString("EXTRA_ID",
                     cursor.getString(cursor.getColumnIndex(FavoritelistContract.FavortitelistEntry.COLUMN_ID)));
-            bundle.putBoolean("EXTRA_FLAG",flag);
 
             cursor.close();
             intent.putExtras(bundle);
@@ -224,18 +217,15 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         switch (id){
             case R.id.action_sort_tr:
                 sortBy = 0;
-                flag = false;
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 break;
             case R.id.action_sort_mp:
                 sortBy = 1;
-                flag = false;
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 break;
             case R.id.action_favorite: {
-                flag = true;
                 mCursor = getAllMovies();
                 favoriteAdapter = new MovieAdapter(this, mCursor);
                 mMoviesList.setAdapter(favoriteAdapter);
@@ -245,21 +235,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private void isOnline() {
-        boolean haveConnectedWifi = false;
-        boolean haveConnectedMobile = false;
-
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
-        for (NetworkInfo ni : netInfo) {
-            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
-                if (ni.isConnected())
-            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
-                if (ni.isConnected())
-        }
-
     }
 
     @Override
@@ -283,9 +258,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.d(TAG,"onRestart()");
         SharedPreferences preferences = getSharedPreferences("moviefavorite", 0);
-        Boolean val = preferences.getBoolean("val",false);
+        Boolean val = preferences.getBoolean("val",true);
+        Log.d(TAG,"onRestart() : "+val);
         if (val) {
             mCursor = getAllMovies();
             favoriteAdapter = new MovieAdapter(this,mCursor);

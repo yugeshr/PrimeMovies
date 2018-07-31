@@ -57,6 +57,7 @@ public class MovieDatabaseJson {
 
         final String DATA_LIST = "results";
         final String DATA_KEY = "key";
+        final String DATA_NAME = "name";
 
         String[] parsedMovieData;
 
@@ -68,11 +69,13 @@ public class MovieDatabaseJson {
 
         for (int i=0; i< resultArray.length();i++){
             String key;
+            String name;
 
             JSONObject movie = resultArray.getJSONObject(i);
             key = movie.getString(DATA_KEY);
+            name = movie.getString(DATA_NAME);
 
-            parsedMovieData[i] = key;
+            parsedMovieData[i] = key + "---" + name;
         }
         return parsedMovieData;
     }

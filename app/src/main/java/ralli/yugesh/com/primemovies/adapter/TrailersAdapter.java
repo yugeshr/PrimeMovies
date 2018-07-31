@@ -60,13 +60,15 @@ public class TrailersAdapter extends RecyclerView.Adapter<TrailersAdapter.Traile
         }
 
         void bind(int position) {
-            trailerView.setText("Trailer " + String.valueOf(position+1));
+            String[] name = mTrailerData[position].split("---",2);
+            trailerView.setText(name[1]);
         }
 
         @Override
         public void onClick(View view) {
             Log.d(TAG,"clicked");
-            String key = mTrailerData[getAdapterPosition()];
+            String[] keyData = mTrailerData[getAdapterPosition()].split("---",2);
+            String key = keyData[0];
             mClickHandler.onClick(key);
         }
     }

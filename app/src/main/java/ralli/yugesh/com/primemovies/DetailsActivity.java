@@ -3,6 +3,8 @@ package ralli.yugesh.com.primemovies;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.content.ContentValues;
@@ -19,9 +21,13 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.LayoutManager;
 import android.util.Log;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
+
 import com.squareup.picasso.Picasso;
 import org.json.JSONException;
 import java.net.URL;
@@ -40,6 +46,9 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
     private ReviewsAdapter reviewsAdapter;
     private TrailersAdapter trailersAdapter;
 
+    LinearLayoutManager trailersLayoutManager;
+    LinearLayoutManager horizontalLayout2;
+
     private String posterData;
     private String title;
     private String plot;
@@ -47,28 +56,24 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
     private String date;
     private String id;
 
-    @BindView(R.id.rv_trailers)
-    private RecyclerView mTrailersList;
-    @BindView(R.id.rv_reviews)
-    private RecyclerView mReviewsList;
+    @BindView(R.id.rv_trailers) RecyclerView mTrailersList;
+    @BindView(R.id.rv_reviews) RecyclerView mReviewsList;
 
-    @BindView(R.id.tv_title)
-    private TextView titleView;
-    @BindView(R.id.tv_plot)
-    private TextView plotView;
-    @BindView(R.id.tv_rating)
-    private TextView ratingView;
-    @BindView(R.id.tv_releasedate)
-    private TextView dateView;
-    @BindView(R.id.iv_poster)
-    private ImageView posterView;
-    @BindView(R.id.fab)
-    private FloatingActionButton fab;
+    @BindView(R.id.tv_title) TextView titleView;
+    @BindView(R.id.tv_plot) TextView plotView;
+    @BindView(R.id.tv_rating) TextView ratingView;
+    @BindView(R.id.tv_releasedate) TextView dateView;
+    @BindView(R.id.iv_poster) ImageView posterView;
+    @BindView(R.id.tbtn_favorite) ToggleButton toggleButton;
 
     private SharedPreferences pref;
 
     private static final String MOVIE_FAVORITE = "moviefavorite";
     private static final String POSTER_URL = "http://image.tmdb.org/t/p/w185/";
+    private Parcelable mSaveState;
+    private int positionIndex;
+    private int topView;
+    private Parcelable listState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,16 +90,12 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         ratingData = bundle.getString("EXTRA_RATING");
         date = bundle.getString("EXTRA_DATE");
         id = bundle.getString("EXTRA_ID");
-        Boolean flag1 = bundle.getBoolean("EXTRA_FLAG");
 
         mReviewsList.setHasFixedSize(true);
         mTrailersList.setHasFixedSize(true);
 
-        LayoutManager trailersLayoutManager = new LinearLayoutManager(this);
+        trailersLayoutManager = new LinearLayoutManager(this);
         mTrailersList.setLayoutManager(trailersLayoutManager);
-
-        LinearLayoutManager horizontalLayout2 = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        mTrailersList.setLayoutManager(horizontalLayout2);
 
         trailersAdapter = new TrailersAdapter(this);
         mTrailersList.setAdapter(trailersAdapter);
@@ -121,19 +122,21 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
         Picasso.get().load(posterPath).into(posterView);
 
         pref = getSharedPreferences(MOVIE_FAVORITE, 0);
-        final Boolean flag = pref.getBoolean("Favorite "+id, false);
+        final Boolean flag = pref.getBoolean("Favorite "+id, true);
         Log.d("Favorite "+id, flag.toString());
 
-        if (flag) {
-            fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
-        }else {
-            fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_off));
-        }
-
-        fab.setOnClickListener(new View.OnClickListener() {
+        toggleButton.setChecked(isAlreadyFavorited(id));
+        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onClick(View view) {
-                if (flag){
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                if (isChecked){
+                    addNewMovie();
+                    SharedPreferences.Editor editor = getSharedPreferences(MOVIE_FAVORITE, MODE_PRIVATE).edit();
+                    editor.putBoolean("Favorite "+id, true);
+                    editor.putBoolean("val",false);
+                    editor.apply();
+                }
+                else {
                     String whereClause = "movieId=?";
                     String[] whereArgs = new String[] {id};
                     getContentResolver().delete(FavoritelistContract.FavortitelistEntry.CONTENT_URI,whereClause,whereArgs);
@@ -142,21 +145,21 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
                     editor.putBoolean("Favorite "+id, false);
                     editor.putBoolean("val",true);
                     editor.apply();
-                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_off));
+                    Toast.makeText(getApplicationContext(),"Removed movie from favorites",Toast.LENGTH_SHORT).show();
                 }
-                else if(!flag){
-                    addNewMovie();
-                    SharedPreferences.Editor editor = getSharedPreferences(MOVIE_FAVORITE, MODE_PRIVATE).edit();
-                    editor.putBoolean("Favorite "+id, true);
-                    editor.putBoolean("val",false);
-                    editor.apply();
-                    fab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),android.R.drawable.btn_star_big_on));
-                }
-
             }
         });
 
         loadData(id);
+    }
+
+    private boolean isAlreadyFavorited(String id) {
+        String[] queryId = new String[]{id};
+        Cursor cursor = getContentResolver().query(FavoritelistContract.FavortitelistEntry.CONTENT_URI, null,
+                FavoritelistContract.FavortitelistEntry.COLUMN_ID+"=?",queryId, null);
+        int size = cursor.getCount();
+        cursor.close();
+        return size > 0;
     }
 
     private void addNewMovie(){
@@ -257,7 +260,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
             try {
                 if (id == 1){
                     jsonData = MovieDatabaseJson.getTrailerStringsFromJson(data);
-                    setYtLink(jsonData);
+                    setTrailers(jsonData);
                 }
                 else {
                     jsonData = MovieDatabaseJson.getReviewStringsFromJson(data);
@@ -278,7 +281,7 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
 
     }
 
-    private void setYtLink(String[] data) {
+    private void setTrailers(String[] data) {
         String[] trailer = new String[data.length];
 
         for (String aData : data) {
@@ -317,8 +320,18 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putParcelable("KeyForLayoutManagerState", mTrailersList.getLayoutManager().onSaveInstanceState());
+    protected void onPause() {
+        super.onPause();
+        positionIndex = trailersLayoutManager.findFirstVisibleItemPosition();
+        View startView = mTrailersList.getChildAt(0);
+        topView = (startView == null) ? 0 : (startView.getTop()) - mTrailersList.getPaddingTop();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (positionIndex!= 1) {
+            trailersLayoutManager.scrollToPositionWithOffset(positionIndex,topView);
+        }
     }
 }
