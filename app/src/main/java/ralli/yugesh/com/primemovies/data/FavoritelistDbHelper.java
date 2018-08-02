@@ -29,7 +29,7 @@ public class FavoritelistDbHelper extends SQLiteOpenHelper{
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + FavoritelistContract.FavortitelistEntry.TABLE_NAME);
         onCreate(sqLiteDatabase);
     }

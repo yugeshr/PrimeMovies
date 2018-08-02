@@ -1,10 +1,9 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.activity;
 
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.content.ContentValues;
@@ -12,9 +11,7 @@ import android.content.Intent;
 import android.support.v4.content.Loader;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.AsyncTaskLoader;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -23,16 +20,15 @@ import android.util.Log;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
-
 import com.squareup.picasso.Picasso;
 import org.json.JSONException;
 import java.net.URL;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import ralli.yugesh.com.primemovies.R;
 import ralli.yugesh.com.primemovies.adapter.ReviewsAdapter;
 import ralli.yugesh.com.primemovies.adapter.TrailersAdapter;
 import ralli.yugesh.com.primemovies.data.FavoritelistContract;
@@ -47,7 +43,6 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
     private TrailersAdapter trailersAdapter;
 
     LinearLayoutManager trailersLayoutManager;
-    LinearLayoutManager horizontalLayout2;
 
     private String posterData;
     private String title;
@@ -70,10 +65,8 @@ TrailersAdapter.TrailersAdapterOnClickHandler{
 
     private static final String MOVIE_FAVORITE = "moviefavorite";
     private static final String POSTER_URL = "http://image.tmdb.org/t/p/w185/";
-    private Parcelable mSaveState;
     private int positionIndex;
     private int topView;
-    private Parcelable listState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

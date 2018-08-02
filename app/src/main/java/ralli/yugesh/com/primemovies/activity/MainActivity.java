@@ -1,13 +1,11 @@
-package ralli.yugesh.com.primemovies;
+package ralli.yugesh.com.primemovies.activity;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.os.Handler;
+import android.os.Parcelable;
 import android.support.v4.content.AsyncTaskLoader;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -20,14 +18,11 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-
 import org.json.JSONException;
-
 import java.net.URL;
-
+import ralli.yugesh.com.primemovies.R;
 import ralli.yugesh.com.primemovies.adapter.MovieAdapter;
 import ralli.yugesh.com.primemovies.data.FavoritelistContract;
-import ralli.yugesh.com.primemovies.data.FavoritelistDbHelper;
 import ralli.yugesh.com.primemovies.utils.MovieDatabaseJson;
 import ralli.yugesh.com.primemovies.utils.NetworkUtils;
 
@@ -41,8 +36,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private static final int MOVIES_LOADER = 22;
     private static final String FETCH_MOVIE_DATA_URL = "query";
     private static Cursor mCursor;
-    private static RecyclerView mMoviesList;
+    private RecyclerView mMoviesList;
     private Boolean flag = false;
+    GridLayoutManager layoutManager;
+    private Parcelable mRecylcerViewParecelable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,25 +47,24 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         setContentView(R.layout.activity_main);
 
         mMoviesList = findViewById(R.id.rv_posters);
+        mMoviesList.setSaveEnabled(true);
 
-        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
-            GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),3);
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            layoutManager = new GridLayoutManager(getApplicationContext(), 3);
             mMoviesList.setLayoutManager(layoutManager);
-        }else {
-            GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(),2);
+        } else {
+            layoutManager = new GridLayoutManager(getApplicationContext(), 2);
             mMoviesList.setLayoutManager(layoutManager);
         }
 
         mMoviesList.setHasFixedSize(true);
 
-        FavoritelistDbHelper favoritelistDbHelper = new FavoritelistDbHelper(this);
-        SQLiteDatabase sqLiteDatabase = favoritelistDbHelper.getWritableDatabase();
-
         movieAdapter = new MovieAdapter(this);
         mMoviesList.setAdapter(movieAdapter);
 
-        if (savedInstanceState!= null) {
-            if (savedInstanceState.containsKey("sort")){
+        if (savedInstanceState != null) {
+            mRecylcerViewParecelable = savedInstanceState.getParcelable("GRID_LAYOUT_PARCEL_KEY");
+            if (savedInstanceState.containsKey("sort")) {
                 sortBy = savedInstanceState.getInt("sort");
             }
         }
@@ -82,14 +78,14 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
 
         Bundle queryBundle = new Bundle();
-        queryBundle.putString(FETCH_MOVIE_DATA_URL,movieDataUrl.toString());
+        queryBundle.putString(FETCH_MOVIE_DATA_URL, movieDataUrl.toString());
 
         LoaderManager loaderManager = getSupportLoaderManager();
         Loader<String> fetchMovieLoader = loaderManager.getLoader(MOVIES_LOADER);
 
-        if (fetchMovieLoader == null){
+        if (fetchMovieLoader == null) {
             loaderManager.initLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
-        }else {
+        } else {
             loaderManager.restartLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
         }
         mCursor.close();
@@ -98,18 +94,18 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     @Override
     public void onClick(String selectedMovie) {
         String[] data = new String[selectedMovie.length()];
-        for (int i=0; i<selectedMovie.length();i++){
+        for (int i = 0; i < selectedMovie.length(); i++) {
             data = selectedMovie.split("---");
         }
-        Intent intent = new Intent(getApplicationContext(),DetailsActivity.class);
+        Intent intent = new Intent(getApplicationContext(), DetailsActivity.class);
         Bundle bundle = new Bundle();
-        bundle.putString("EXTRA_POSTER",data[0]);
+        bundle.putString("EXTRA_POSTER", data[0]);
         bundle.putString("EXTRA_TITLE", data[2]);
-        bundle.putString("EXTRA_PLOT",data[3]);
-        bundle.putString("EXTRA_RATING",data[4]);
-        bundle.putString("EXTRA_DATE",data[5]);
-        bundle.putString("EXTRA_ID",data[1]);
-        bundle.putBoolean("EXTRA_FLAG",flag);
+        bundle.putString("EXTRA_PLOT", data[3]);
+        bundle.putString("EXTRA_RATING", data[4]);
+        bundle.putString("EXTRA_DATE", data[5]);
+        bundle.putString("EXTRA_ID", data[1]);
+        bundle.putBoolean("EXTRA_FLAG", flag);
         intent.putExtras(bundle);
         startActivity(intent);
     }
@@ -169,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 if (fetchQueryUrlString == null) {
                     return null;
                 }
-                try{
+                try {
                     URL movieUrl = new URL(fetchQueryUrlString);
                     return NetworkUtils.getResponseFromHttpUrl(movieUrl);
                 } catch (Exception e) {
@@ -192,8 +188,13 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             }
             //System.out.println(jsonData);
             movieAdapter.setPosterPath(jsonData);
-        }
-        else {
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mMoviesList.getLayoutManager().onRestoreInstanceState(mRecylcerViewParecelable);
+                }
+            },100);
+        } else {
             System.out.println("null value");
         }
 
@@ -206,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main,menu);
+        getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
@@ -214,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        switch (id){
+        switch (id) {
             case R.id.action_sort_tr:
                 sortBy = 0;
                 mMoviesList.setAdapter(movieAdapter);
@@ -240,16 +241,19 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt("sort",sortBy);
+        outState.putInt("sort", sortBy);
+        mRecylcerViewParecelable = mMoviesList.getLayoutManager().onSaveInstanceState();
+        outState.putParcelable("GRID_LAYOUT_PARCEL_KEY", mRecylcerViewParecelable);
     }
 
-    private Cursor getAllMovies(){
+
+
+    private Cursor getAllMovies() {
         try {
             return getContentResolver()
                     .query(FavoritelistContract.FavortitelistEntry.CONTENT_URI,
-                            null,null,null,null);
-        }
-        catch (Exception e){
+                            null, null, null, null);
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -259,13 +263,20 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     protected void onRestart() {
         super.onRestart();
         SharedPreferences preferences = getSharedPreferences("moviefavorite", 0);
-        Boolean val = preferences.getBoolean("val",true);
-        Log.d(TAG,"onRestart() : "+val);
+        Boolean val = preferences.getBoolean("val", true);
+        Log.d(TAG, "onRestart() : " + val);
         if (val) {
             mCursor = getAllMovies();
-            favoriteAdapter = new MovieAdapter(this,mCursor);
+            favoriteAdapter = new MovieAdapter(this, mCursor);
             mMoviesList.setAdapter(favoriteAdapter);
             favoriteAdapter.notifyDataSetChanged();
         }
     }
+    /*@Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        int positionIndex = savedInstanceState.getInt("positionValue");
+        ((GridLayoutManager) mMoviesList.getLayoutManager()).scrollToPosition(positionIndex);
+        Log.d(TAG,"Restore "+positionIndex);
+    }*/
 }
