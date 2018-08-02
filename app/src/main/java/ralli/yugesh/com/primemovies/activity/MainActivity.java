@@ -1,45 +1,49 @@
 package ralli.yugesh.com.primemovies.activity;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.database.Cursor;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Parcelable;
-import android.support.v4.content.AsyncTaskLoader;
-import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+
 import org.json.JSONException;
+
 import java.net.URL;
+
 import ralli.yugesh.com.primemovies.R;
 import ralli.yugesh.com.primemovies.adapter.MovieAdapter;
 import ralli.yugesh.com.primemovies.data.FavoritelistContract;
 import ralli.yugesh.com.primemovies.utils.MovieDatabaseJson;
 import ralli.yugesh.com.primemovies.utils.NetworkUtils;
+import ralli.yugesh.com.primemovies.utils.Utility;
 
 public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler,
         LoaderManager.LoaderCallbacks<String> {
 
     private static final String TAG = "LOG";
     private int sortBy = 1;
+    private Boolean flag = false;
     private MovieAdapter movieAdapter;
     private MovieAdapter favoriteAdapter;
     private static final int MOVIES_LOADER = 22;
     private static final String FETCH_MOVIE_DATA_URL = "query";
     private static Cursor mCursor;
     private RecyclerView mMoviesList;
-    private Boolean flag = false;
-    GridLayoutManager layoutManager;
+    private GridLayoutManager layoutManager;
     private Parcelable mRecylcerViewParecelable;
+    private static final String KEY_SORT = "sort";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,13 +53,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mMoviesList = findViewById(R.id.rv_posters);
         mMoviesList.setSaveEnabled(true);
 
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            layoutManager = new GridLayoutManager(getApplicationContext(), 3);
-            mMoviesList.setLayoutManager(layoutManager);
-        } else {
-            layoutManager = new GridLayoutManager(getApplicationContext(), 2);
-            mMoviesList.setLayoutManager(layoutManager);
-        }
+        int mNoOfColumns = Utility.calculateNoOfColumns(getApplicationContext());
+
+        layoutManager = new GridLayoutManager(getApplicationContext(), mNoOfColumns);
+        mMoviesList.setLayoutManager(layoutManager);
 
         mMoviesList.setHasFixedSize(true);
 
@@ -64,8 +65,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         if (savedInstanceState != null) {
             mRecylcerViewParecelable = savedInstanceState.getParcelable("GRID_LAYOUT_PARCEL_KEY");
-            if (savedInstanceState.containsKey("sort")) {
-                sortBy = savedInstanceState.getInt("sort");
+            if (savedInstanceState.containsKey(KEY_SORT)) {
+                sortBy = savedInstanceState.getInt(KEY_SORT);
             }
         }
 
@@ -73,22 +74,29 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     }
 
     private void loadMovieData() {
-        mCursor = getAllMovies();
 
-        URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
+        if (sortBy == 3){
+            mCursor = getAllMovies();
+            favoriteAdapter = new MovieAdapter(this, mCursor);
+            mMoviesList.setAdapter(favoriteAdapter);
+            favoriteAdapter.notifyDataSetChanged();
+        }else {
+            URL movieDataUrl = NetworkUtils.buildUrl(sortBy);
 
-        Bundle queryBundle = new Bundle();
-        queryBundle.putString(FETCH_MOVIE_DATA_URL, movieDataUrl.toString());
+            Bundle queryBundle = new Bundle();
+            queryBundle.putString(FETCH_MOVIE_DATA_URL, movieDataUrl.toString());
 
-        LoaderManager loaderManager = getSupportLoaderManager();
-        Loader<String> fetchMovieLoader = loaderManager.getLoader(MOVIES_LOADER);
+            LoaderManager loaderManager = getSupportLoaderManager();
+            Loader<String> fetchMovieLoader = loaderManager.getLoader(MOVIES_LOADER);
 
-        if (fetchMovieLoader == null) {
-            loaderManager.initLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
-        } else {
-            loaderManager.restartLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
+            if (fetchMovieLoader == null) {
+                loaderManager.initLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
+            } else {
+                loaderManager.restartLoader(MOVIES_LOADER, queryBundle, this).forceLoad();
+            }
         }
-        mCursor.close();
+
+
     }
 
     @Override
@@ -217,16 +225,20 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         switch (id) {
             case R.id.action_sort_tr:
+                mRecylcerViewParecelable = null;
                 sortBy = 0;
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 break;
             case R.id.action_sort_mp:
+                mRecylcerViewParecelable = null;
                 sortBy = 1;
                 mMoviesList.setAdapter(movieAdapter);
                 loadMovieData();
                 break;
             case R.id.action_favorite: {
+                mRecylcerViewParecelable = null;
+                sortBy = 3;
                 mCursor = getAllMovies();
                 favoriteAdapter = new MovieAdapter(this, mCursor);
                 mMoviesList.setAdapter(favoriteAdapter);
@@ -241,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt("sort", sortBy);
+        outState.putInt(KEY_SORT, sortBy);
         mRecylcerViewParecelable = mMoviesList.getLayoutManager().onSaveInstanceState();
         outState.putParcelable("GRID_LAYOUT_PARCEL_KEY", mRecylcerViewParecelable);
     }
@@ -272,11 +284,4 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             favoriteAdapter.notifyDataSetChanged();
         }
     }
-    /*@Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        int positionIndex = savedInstanceState.getInt("positionValue");
-        ((GridLayoutManager) mMoviesList.getLayoutManager()).scrollToPosition(positionIndex);
-        Log.d(TAG,"Restore "+positionIndex);
-    }*/
 }
